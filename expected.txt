@@ -1,8 +1,9 @@
 seeds: first 300 from seeds.txt
 test classes: 30
-failed runs: 6 of 300
-failed seeds: 64589922 40649384 19365762 57678503 51624451 21208866
-failed runs with LoyaltyPointsIT right before: 6 of 6
+failed runs within 2..20 (1 in 30 expected): yes
+every failed run had LoyaltyPointsIT right before: yes
 passed runs with LoyaltyPointsIT right before: 0
 first failed seed reproduced: 3 of 3
+pair LoyaltyPointsIT then FirstOrderDiscountIT: fail
+pair FirstOrderDiscountIT then LoyaltyPointsIT: pass
 model: 3376 of 100000 shuffles, 1 in 29.6 (exact 1 in 30)

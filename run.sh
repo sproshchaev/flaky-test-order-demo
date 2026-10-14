@@ -58,14 +58,44 @@ if (( ${#failed[@]} > 0 )); then
   done
 fi
 
+# The pair alone, without random order: works the same on any OS.
+# Alphabetical order puts com.shop.loyalty before com.shop.order.
+pair_result() {
+  if mvn -B test -Dtest='LoyaltyPointsIT,FirstOrderDiscountIT' \
+      -Dsurefire.runOrder="$1" > target/pair.log 2>&1; then
+    echo pass
+  else
+    echo fail
+  fi
+}
+pair_forward=$(pair_result alphabetical)
+pair_reverse=$(pair_result reversealphabetical)
+
+# Which seeds fail depends on the OS: Surefire shuffles the classes in the
+# order it found them on disk. Printed for information, not compared.
+echo "os: $(uname -s)"
+echo "failed runs: ${#failed[@]} of $SEEDS"
+echo "failed seeds: ${failed[*]:-none}"
+
+# What does not depend on the OS goes to the comparison.
+# 2..20 failures of 300 cover 99.8% of outcomes for a 1-in-30 rate.
+in_range=no
+if (( ${#failed[@]} >= 2 && ${#failed[@]} <= 20 )); then
+  in_range=yes
+fi
+all_after_neighbour=no
+if (( ${#failed[@]} > 0 && fail_after_neighbour == ${#failed[@]} )); then
+  all_after_neighbour=yes
+fi
 {
   echo "seeds: first $SEEDS from seeds.txt"
   echo "test classes: $(find src/test/java -name '*IT.java' ! -name 'AbstractIT.java' | wc -l | tr -d ' ')"
-  echo "failed runs: ${#failed[@]} of $SEEDS"
-  echo "failed seeds: ${failed[*]:-none}"
-  echo "failed runs with LoyaltyPointsIT right before: $fail_after_neighbour of ${#failed[@]}"
+  echo "failed runs within 2..20 (1 in 30 expected): $in_range"
+  echo "every failed run had LoyaltyPointsIT right before: $all_after_neighbour"
   echo "passed runs with LoyaltyPointsIT right before: $pass_after_neighbour"
   echo "first failed seed reproduced: $reproduced of 3"
+  echo "pair LoyaltyPointsIT then FirstOrderDiscountIT: $pair_forward"
+  echo "pair FirstOrderDiscountIT then LoyaltyPointsIT: $pair_reverse"
   java tools/OrderOdds.java
 } > "$OUT"
 
