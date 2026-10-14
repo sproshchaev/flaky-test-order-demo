@@ -18,9 +18,13 @@
 ```bash
 git clone https://github.com/sproshchaev/flaky-test-order-demo.git
 cd flaky-test-order-demo
-mvn test      # порядок по умолчанию: всё зелёное
+mvn test      # порядок по алфавиту: всё зелёное
 ./run.sh      # 300 прогонов со случайным порядком, около 8 минут
 ```
+
+Обычный `mvn test` идёт по алфавиту (`surefire.runOrder=alphabetical` в `pom.xml`): между
+`LoyaltyPointsIT` и `FirstOrderDiscountIT` встаёт `BulkOrderIT`, который чистит базу, и
+прогон зелёный на любой машине. Так выглядит «локально всё работает» из статьи.
 
 `run.sh` прогоняет набор с профилем `ci` для каждого сида из `seeds.txt`, считает падения,
 смотрит, какой класс шёл прямо перед `FirstOrderDiscountIT`, повторяет первый упавший сид,
@@ -63,7 +67,8 @@ mvn test -Dtest='LoyaltyPointsIT,FirstOrderDiscountIT' -Dsurefire.runOrder=alpha
 Сиды на двух системах не совпадают ни разу. Surefire с `runOrder=random` перемешивает
 классы вызовом `Collections.shuffle(list, new Random(seed))`, но на вход берёт список
 в том порядке, в каком нашёл классы на диске, а этот порядок у файловых систем разный.
-Сид из журнала CI надёжно повторяет порядок там же, где его получили. На другой машине
+Сид из журнала CI надёжно повторяет порядок там же, где его получили: два прогона CI
+на разных виртуальных машинах GitHub дали одинаковый список упавших сидов. На другой машине
 порядок сначала сверяют по строкам `Running` в журнале, а быстрее всего запустить
 подозрительную пару отдельно.
 
@@ -99,9 +104,10 @@ mvn test -Dtest='LoyaltyPointsIT,FirstOrderDiscountIT' -Dsurefire.runOrder=alpha
 ## Структура
 
 ```text
-pom.xml                         профиль ci с runOrder=random
+pom.xml                         порядок по алфавиту, профиль ci с runOrder=random
 run.sh                          300 прогонов, пара отдельно, сверка с expected.txt
 seeds.txt                       300 фиксированных сидов
+tools/seeds.py                  генератор seeds.txt, CI сверяет байт в байт
 expected.txt                    эталонный итог
 tools/OrderOdds.java            модель перемешивания, частота 1/30
 src/main/java/com/shop/order/   правило скидки и таблица заказов в памяти
